@@ -1,0 +1,67 @@
+---
+title: "Travelling Salesman nearest neighbour in R"
+author: "Jonathan Bourne"
+date: "2 October 2015"
+output: html_document
+---
+
+#Introduction
+This is a short explanation of how to make a nearest neighbour distance travelled optimiser for a set of arbitrary points in a two dimensional space.
+
+
+#Method
+
+The data set is clean and the only pre processeing required is to combine it into a single matrix.
+
+```{r}
+x <- c(0.5, 0.6965,1.8229,0.4225,1.0844,0.9201,1.6011,1.960,1.3126,0.6063)
+y <- c(0.5, 0.8504, 1.5750,1.0436, 0.5310,1.7178,0.7569,0.1747,1.3507,1.3303)
+data1 <- cbind(x,y)
+```
+
+
+The matrix to be created is symetric however as the order of evaluation of each of the points is not known both the upper and lower halves of the matrix need to be shown.
+
+```{r}
+data <- as.matrix(dist(data1), upper = TRUE, diag = TRUE)
+```
+
+The objective of the program is to minimise the total distance travelled by finding the the nearest point to the current location which has not yet been visited. in order to do this the minimum of each column vector must be found. However the distance from the location to itself is 0 and so needs to be converted to an NA value and excluded from the calculation.
+
+The start point is known and is the first row of the matrix and the first column of the distance matrix. This means the initial "nearest" point and "target" point are both 0
+
+```{r}
+data[data ==0] <- NA
+data[1,] <- NA
+nearest <- 1
+target <- nearest
+```
+
+in order to cycle trhough the columns a for loop is created of n-1 iterations. this finds the nearest point to the current location, removes that line from further iterations by converting that row to NA values stores the result in a an order vector called "target" before moving to the nearest point and repeating the process.
+
+```{r }
+for(i in 1:9) {
+  
+  nearest <- which(data[,nearest] == min(data[,nearest], na.rm= TRUE)) 
+  data[nearest,] <- NA
+  i <-i+1
+  target <- c(target,nearest)
+}
+
+```
+
+The total distance travelled by the robot using the nearest neighbour method is then calcuated and compared to the original order
+
+```{r}
+distance1 <- data1[-1,]-data1[-10,]
+total_orig <- sum(sqrt(distance1[,1]^2+distance1[,2]^2))
+
+distance2 <- data1[target[-1],]-data1[target[-10],]
+total_nn <- sum(sqrt(distance2[,1]^2+distance2[,2]^2))
+
+diff <- total_orig -total_nn
+```
+
+#Conclusion
+
+In this case the original orer was `r signif(diff,3)`m longer than the nearest neighbour method, which is a pretty good win. However in some cases using nearest neighbour can be considerably longer routes than expected (see [link](https://en.wikipedia.org/wiki/Travelling_salesman_problem#Constructive_heuristics) for details)
